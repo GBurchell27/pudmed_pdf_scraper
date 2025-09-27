@@ -40,7 +40,6 @@ export const STATUS_COLORS = {
   failed: 'red',
   pending_urls: 'gray',
   resolved: 'blue',
-  downloading: 'indigo',
   downloaded: 'green',
   failed_search: 'red',
   failed_paywall: 'red',

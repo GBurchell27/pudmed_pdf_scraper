@@ -1,12 +1,26 @@
 {
-  "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.15",
-    "@radix-ui/react-progress": "^1.1.7",
-    "@radix-ui/react-slot": "^1.2.3",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.544.0",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7"
-  }
+  "name": "pubmed-pdf-scraper",
+  "version": "1.0.0",
+  "description": "Automated PubMed article discovery and PDF downloading application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint",
+    "install-frontend": "cd frontend && npm install",
+    "install-all": "npm run install-frontend"
+  },
+  "keywords": [
+    "pubmed",
+    "pdf",
+    "scraper",
+    "research",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "workspaces": [
+    "frontend"
+  ]
 }
