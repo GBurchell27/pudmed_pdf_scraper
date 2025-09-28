@@ -2,7 +2,7 @@
 name = "pubmed-pdf-scraper-backend"
 version = "0.1.0"
 description = "FastAPI backend for resolving PubMed PDFs"
-authors = ["<your name>"]
+authors = ["Georg Example georg@example.com"]
 readme = "README.md"
 packages = [{ include = "app" }]
 

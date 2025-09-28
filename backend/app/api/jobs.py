@@ -1,26 +1,41 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from .schemas.jobs import JobCreate, JobCreated, JobItemStatus, JobState, JobStatus, map_job_record
+from ..core.config import get_settings
 from ..repositories.jobs_repo import InMemoryJobsRepository, JobItemRecord
-from ..services.resolver import PdfResolver
+from ..services.resolver import PubmedResolverManager, build_default_resolver
+from ..services.resolver.manager import ResolverConfig
 
 
 router = APIRouter()
 
 
 jobs_repo = InMemoryJobsRepository()
-resolver = PdfResolver()
+
+
+def _build_resolver() -> PubmedResolverManager:
+    settings = get_settings()
+    config = ResolverConfig(
+        timeout=settings.resolver_timeout_seconds,
+        retries=settings.resolver_retries,
+        user_agent=settings.resolver_user_agent,
+        mock_mode=settings.resolver_mock_mode,
+    )
+    return build_default_resolver(config=config)
+
+
+resolver_manager = _build_resolver()
 
 
 def get_jobs_repo() -> InMemoryJobsRepository:
     return jobs_repo
 
 
-def get_resolver() -> PdfResolver:
-    return resolver
+def get_resolver() -> PubmedResolverManager:
+    return resolver_manager
 
 
-def _resolve_job(job_id: str, repo: InMemoryJobsRepository, resolver: PdfResolver) -> None:
+def _resolve_job(job_id: str, repo: InMemoryJobsRepository, resolver: PubmedResolverManager) -> None:
     repo.set_state(job_id, JobState.running.value)
     items = repo.list_items(job_id)
     for item in items:
@@ -40,11 +55,11 @@ def _process_item(
     job_id: str,
     item: JobItemRecord,
     repo: InMemoryJobsRepository,
-    resolver: PdfResolver,
+    resolver: PubmedResolverManager,
 ) -> None:
     try:
         result = resolver.resolve(item.url)
-        pdf_url = result.get("pdf_url")
+        pdf_url = result.pdf_url
         status_value = (
             JobItemStatus.resolved.value if pdf_url else JobItemStatus.failed.value
         )
@@ -53,7 +68,7 @@ def _process_item(
             item.url,
             status=status_value,
             pdf_url=pdf_url,
-            reason=result.get("reason"),
+            reason=result.reason,
         )
     except Exception as exc:  # pragma: no cover - placeholder error handling
         repo.update_item(
@@ -69,7 +84,7 @@ def create_job(
     job_request: JobCreate,
     background_tasks: BackgroundTasks,
     repo: InMemoryJobsRepository = Depends(get_jobs_repo),
-    pdf_resolver: PdfResolver = Depends(get_resolver),
+    pdf_resolver: PubmedResolverManager = Depends(get_resolver),
 ) -> JobCreated:
     record = repo.create([str(url) for url in job_request.urls])
     background_tasks.add_task(_resolve_job, record.id, repo, pdf_resolver)

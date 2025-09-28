@@ -40,18 +40,18 @@
      -Headers @{ "Content-Type" = "application/json" } `
      -Body '{"urls":["https://pubmed.ncbi.nlm.nih.gov/example1","https://pubmed.ncbi.nlm.nih.gov/example2"]}'
 
-### 4. Resolver v0 (PubMed page → PDF/External)
+### ✅ 4. Resolver v0 (PubMed page → PDF/External)
 
-#### 4.1. Input Validation & Normalization
+#### ✅ 4.1. Input Validation & Normalization
 - **Step:** Validate input URL.
 - **Action:** Normalize to `https://pubmed.ncbi.nlm.nih.gov/{pmid}/`.
 
-#### 4.2. HTML Fetching
+#### ✅ 4.2. HTML Fetching
 - **Component:** `PubmedHtmlFetcher`
   - Configurable timeouts, user agent, and retries.
   - Fetches the PubMed page and returns either HTML or a structured error.
 
-#### 4.3. Resolution Orchestration
+#### ✅ 4.3. Resolution Orchestration
 - **Component:** `PubmedResolverManager`
   - Orchestrates the parsing process:
     1. Try the PMC (PubMed Central) path.
@@ -60,7 +60,7 @@
 
 ---
 
-#### 4.4. PMC Branch
+#### ✅ 4.4. PMC Branch
 
 - **a. PMCID Extraction**
   - **Component:** `PubmedPageParser`
@@ -82,7 +82,7 @@
 
 ---
 
-#### 4.5. External Branch
+#### ✅ 4.5. External Branch
 
 - **a. Full Text Link Extraction**
   - **Component:** `FullTextLinkExtractor`
@@ -102,7 +102,7 @@
 
 ---
 
-#### 4.6. Error Handling & Observability
+#### ☐ 4.6. Error Handling & Observability
 
 - Map fetch failures to reason enums/messages (e.g., timeout, 4xx, 5xx, parse errors).
 - Log structured events: URL, stage, status.
@@ -111,7 +111,7 @@
 
 ---
 
-#### 4.7. Testing & Harness
+#### ☐ 4.7. Testing & Harness
 
 - Add fixtures for:
   - A known PMC article.
