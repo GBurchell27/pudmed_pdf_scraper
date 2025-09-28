@@ -41,14 +41,95 @@
      -Body '{"urls":["https://pubmed.ncbi.nlm.nih.gov/example1","https://pubmed.ncbi.nlm.nih.gov/example2"]}'
 
 ### 4. Resolver v0 (PubMed page → PDF/External)
-- Input: PubMed article URL (e.g https://pubmed.ncbi.nlm.nih.gov/38702718/)
-- Fetch HTML with configured timeouts, custom User-Agent
-- Detect PMC PDF first; otherwise extract "Full text" external link
-- If external, fetch landing page (max 1 extra hop) and search for `.pdf` link or "Download PDF" anchor
-- Return structure: `{ source: "PMC" | "External" | "None", pdf_url: str | None, reason: str | None }`
-- Map errors (timeout, HTTP errors, parse failures) to human-readable `reason`
-- **Acceptance**: Known PMC article resolves to PDF; known external resolves to external PDF or reason when not found
-- **Milestone Test**: Run `python -m app.services.resolver https://pubmed.ncbi.nlm.nih.gov/<pmc-id>` (or dedicated test harness) and verify JSON output contains expected `source` and `pdf_url`
+
+#### 4.1. Input Validation & Normalization
+- **Step:** Validate input URL.
+- **Action:** Normalize to `https://pubmed.ncbi.nlm.nih.gov/{pmid}/`.
+
+#### 4.2. HTML Fetching
+- **Component:** `PubmedHtmlFetcher`
+  - Configurable timeouts, user agent, and retries.
+  - Fetches the PubMed page and returns either HTML or a structured error.
+
+#### 4.3. Resolution Orchestration
+- **Component:** `PubmedResolverManager`
+  - Orchestrates the parsing process:
+    1. Try the PMC (PubMed Central) path.
+    2. If unsuccessful, try external links.
+    3. If all fail, return `None`.
+
+---
+
+#### 4.4. PMC Branch
+
+- **a. PMCID Extraction**
+  - **Component:** `PubmedPageParser`
+    - Isolates the PMCID using DOM selectors or metadata.
+
+- **b. PMC Article Fetching**
+  - **Component:** `PmcArticleFetcher`
+    - Builds the URL: `https://pmc.ncbi.nlm.nih.gov/articles/PMC{pmcid}/`
+    - Downloads the article HTML.
+
+- **c. PDF Extraction**
+  - **Component:** `PmcPdfExtractor`
+    - Locates the PDF anchor using a selector.
+    - Normalizes relative URLs.
+    - Returns: `{ source: "PMC", pdf_url, reason: None }`.
+
+- **d. Error Tracking**
+  - Track PMCID lookups and HTTP errors separately for improved error messages.
+
+---
+
+#### 4.5. External Branch
+
+- **a. Full Text Link Extraction**
+  - **Component:** `FullTextLinkExtractor`
+    - Extracts candidates from the “Full text links” section (limit to first valid).
+
+- **b. External Landing Fetching**
+  - **Component:** `ExternalLandingFetcher`
+    - Loads the landing page using the same fetcher (one extra hop max).
+
+- **c. PDF Location**
+  - **Component:** `ExternalPdfLocator`
+    - Scans for:
+      - Direct `.pdf` URLs
+      - “Download PDF” anchors
+      - `<meta http-equiv="refresh">` tags pointing to PDFs
+    - If none found, returns: `{ source: "External", pdf_url: None, reason: "PDF link not discovered on landing page" }`.
+
+---
+
+#### 4.6. Error Handling & Observability
+
+- Map fetch failures to reason enums/messages (e.g., timeout, 4xx, 5xx, parse errors).
+- Log structured events: URL, stage, status.
+- Expose a lightweight tracing ID for each operation.
+- Include hooks for circuit breaker/backoff for future scaling.
+
+---
+
+#### 4.7. Testing & Harness
+
+- Add fixtures for:
+  - A known PMC article.
+  - A known external article.
+- Provide a CLI/test harness:
+  - `python -m app.services.resolver <pubmed-url>` prints JSON result.
+  - Use dependency injection to swap fetchers for tests.
+- Write:
+  - Unit tests for each component.
+  - Integration tests for both happy and failure paths.
+
+---
+
+#### 4.8. Extension Points & Structure
+
+- All classes accept interfaces (e.g., `HtmlFetcher`, `ArticleParser`) to allow future strategies (API-based retrieval, caching, etc.).
+- Keep each class under 200 lines.
+- Prefer separate modules under `app/services/resolver/` for each responsibility.
 
 ### 5. Progress + item statuses
 - Track per-URL item state: `pending | resolved | failed`, with `pdf_url` and `reason`
