@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "pubmed-pdf-scraper-backend"
+version = "0.1.0"
+description = "FastAPI backend for resolving PubMed PDFs"
+authors = ["<your name>"]
+readme = "README.md"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111"
+uvicorn = { extras = ["standard"], version = "^0.30" }
+httpx = "^0.27"
+beautifulsoup4 = "^4.12"
+pydantic-settings = "^2.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-asyncio = "^0.23"
+httpx = { version = "^0.27", extras = ["cli"] }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
